@@ -7,7 +7,7 @@
 -include_lib("kvs/include/config.hrl").
 -include_lib("kvs/include/feed.hrl").
 
--define(SUPERVISER,kvs_feeds). % genserver application name
+-define(GROUP,kvs_feeds). % genserver application name
 -define(CLASS,feed_server).  % ets caching key prefix
 
 reply(R,S) -> {reply,R,S,?CONFIG(feed_timeout,10*60*1000)}.
@@ -31,7 +31,7 @@ ensure_start(FeedChannel) ->
     case n2o_async:pid({?CLASS,FeedChannel}) of Pid when is_pid(Pid) -> Pid; _ -> start(FeedChannel) end.
 
 start(FeedChannel) ->
-    H=#handler{module=?M,group=?SUPERVISER,class=?CLASS,name=FeedChannel,state=[]},
+    H=#handler{module=?M,group=?GROUP,class=?CLASS,name=FeedChannel,state=[]},
     {Pid,FeedChannel}=n2o_async:start(H),
     log(start,H,Pid),
     Pid.
@@ -67,9 +67,10 @@ exec({eval,R,Fun}) ->
     end;
 exec({relink,R}) ->
     log(relink,R,self()),
-    {ok,F}=kvs:get(element(#iterator.container,R),element(#iterator.feed_id,R)),
-    kvs:relink(F,R,#kvs{mod=?DBA}),
-    kvs:link(R);
+    % {ok,F}=kvs:get(element(#iterator.container,R),element(#iterator.feed_id,R)),
+    % kvs:unlink(F,R,#kvs{mod=?DBA}),
+    {ok,R2}=kvs:unlink(R),
+    kvs:link(R2);
 exec({delete,R}) ->
     log(delete,R,self()),
     kvs:remove(element(1,R),element(2,R));
